@@ -1,4 +1,4 @@
-import { Dropdown1 } from './components/dropdown/basic';
+import { Dropdown1 } from './components/dropdown/compound';
 import ModalContext from './components/modal/context';
 import ModalCreatePortal from './components/modal/createPortal';
 import ModalDialog from './components/modal/dialog';
@@ -25,7 +25,7 @@ export const routePaths = [
   '/carousel',
   '/gallery',
   '/dropdown',
-  '/dropdown/basic',
+  '/dropdown/compound',
   '/autoComplete',
   '/dnd',
 ] as const;
@@ -180,14 +180,14 @@ export const routes: Record<ROUTE_PATH, ROUTE> = {
   },
   '/dropdown': {
     key: '/dropdown',
-    link: '/dropdown/basic',
+    link: '/dropdown/compound',
     name: '16. 드롭다운',
-    children: ['/dropdown/basic'],
+    children: ['/dropdown/compound'],
   },
-  '/dropdown/basic': {
-    key: '/dropdown/basic',
-    link: '/dropdown/basic',
-    name: 'Basic',
+  '/dropdown/compound': {
+    key: '/dropdown/compound',
+    link: '/dropdown/compound',
+    name: 'Compound',
     children: Dropdown1,
   },
   '/autoComplete': {
