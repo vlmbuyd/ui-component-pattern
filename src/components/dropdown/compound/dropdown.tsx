@@ -1,50 +1,59 @@
-import React, {
-  createContext,
-  KeyboardEvent,
+import {
+  Dispatch,
+  ReactNode,
   SetStateAction,
+  createContext,
   useContext,
+  useState,
+  KeyboardEvent,
+  useCallback,
   useEffect,
   useRef,
-  useState,
+  RefObject,
 } from 'react';
 import cx from '../cx';
 
-type DropdownItemType = {
+export type DropdownItemType = {
   id: string;
   text: string;
 };
 type DropdownProps = {
   items: DropdownItemType[];
+  size: number;
   isOpen: boolean;
-  selectedIndex: number;
   focusedIndex: number;
+  selectedIndex: number;
+  itemsRef: RefObject<HTMLLIElement[]>;
 };
 type DropdownDispatchProps = {
-  setItems: React.Dispatch<SetStateAction<DropdownItemType[]>>;
+  setItems: Dispatch<SetStateAction<DropdownItemType[]>>;
+  focusIndex: Dispatch<SetStateAction<number>>;
+  selectIndex: (index: number) => void;
   toggle: (force?: boolean) => void;
-  selectIndex: React.Dispatch<SetStateAction<number>>;
-  focusIndex: React.Dispatch<SetStateAction<number>>;
-  handleKeydown: (e: KeyboardEvent) => void;
+  handleKeyDown: (e: KeyboardEvent) => void;
 };
 
 type KeyEventHandler = (
-  e: KeyboardEvent,
-  props: Pick<DropdownProps, 'focusedIndex' | 'items'> &
+  event: KeyboardEvent,
+  {
+    focusIndex,
+  }: Pick<DropdownProps, 'size' | 'focusedIndex'> &
     Pick<DropdownDispatchProps, 'focusIndex' | 'selectIndex' | 'toggle'>
 ) => void;
 
 const KeyEventMap: Partial<
   Record<KeyboardEvent<Element>['key'], KeyEventHandler>
 > = {
-  ArrowUp: (e, { focusIndex, items }) => {
-    // focusIndex((prev) => Math.max(prev - 1, 0)); 최소값 제한
-    focusIndex((prev) => (items.length + prev - 1) % items.length); // 순환
+  ArrowUp: (e, { size, focusIndex }) => {
+    e.preventDefault();
+    focusIndex((prev) => (size + prev - 1) % size);
   },
-  ArrowDown: (e, { focusIndex, items }) => {
-    // focusIndex((prev) => Math.min(prev + 1, items.length - 1)); 최대값 제한
-    focusIndex((prev) => (items.length + prev + 1) % items.length); // 순환
+  ArrowDown: (e, { size, focusIndex }) => {
+    e.preventDefault();
+    focusIndex((prev) => (size + prev + 1) % size);
   },
-  Enter: (e, { selectIndex, focusedIndex }) => {
+  Enter: (e, { focusedIndex, selectIndex }) => {
+    e.preventDefault();
     selectIndex(focusedIndex);
   },
   Escape: (e, { toggle }) => {
@@ -54,81 +63,24 @@ const KeyEventMap: Partial<
 
 const DropdownContext = createContext<DropdownProps>({
   items: [],
+  size: 0,
   isOpen: false,
-  selectedIndex: -1,
   focusedIndex: -1,
+  selectedIndex: -1,
+  itemsRef: { current: [] },
 });
 const DropdownDispatchContext = createContext<DropdownDispatchProps>({
   setItems: () => {},
-  toggle: () => {},
-  selectIndex: () => {},
   focusIndex: () => {},
-  handleKeydown: () => {},
+  selectIndex: () => {},
+  toggle: () => {},
+  handleKeyDown: () => {},
 });
-
 const useDropdown = () => useContext(DropdownContext);
 const useSetDropdown = () => useContext(DropdownDispatchContext);
 
-const DropdownContextProvider = ({
-  list,
-  children,
-}: {
-  list: DropdownItemType[];
-  children: React.ReactNode;
-}) => {
-  const [items, setItems] = useState<DropdownItemType[]>(list);
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [focusedIndex, focusIndex] = useState<number>(-1);
-  const [selectedIndex, selectIndex] = useState<number>(-1);
-
-  const toggle = (force?: boolean) => {
-    setIsOpen((prev) => (typeof force === 'boolean' ? force : !prev));
-  };
-
-  const handleKeydown = (e: KeyboardEvent) => {
-    const { key } = e;
-    const handler = KeyEventMap[key];
-    if (handler) {
-      handler(e, { items, focusedIndex, focusIndex, selectIndex, toggle });
-    }
-  };
-
-  return (
-    <DropdownContext.Provider
-      value={{
-        items,
-        isOpen,
-        selectedIndex,
-        focusedIndex,
-      }}
-    >
-      <DropdownDispatchContext.Provider
-        value={{
-          setItems,
-          toggle,
-          focusIndex,
-          selectIndex,
-          handleKeydown,
-        }}
-      >
-        {children}
-      </DropdownDispatchContext.Provider>
-    </DropdownContext.Provider>
-  );
-};
-
-const DropdownContainer = ({ children }: { children: React.ReactNode }) => {
-  const { handleKeydown } = useSetDropdown();
-
-  return (
-    <div className={cx('Dropdown')} onKeyDown={handleKeydown}>
-      {children}
-    </div>
-  );
-};
-
 const DropdownTrigger = () => {
-  const { selectedIndex, items } = useDropdown();
+  const { items, selectedIndex } = useDropdown();
   const { toggle } = useSetDropdown();
   const selectedItem = items[selectedIndex];
 
@@ -144,14 +96,13 @@ const DropdownTrigger = () => {
 const DropdownItem = ({
   item,
   index,
-  itemsRef,
 }: {
-  itemsRef: React.MutableRefObject<(HTMLLIElement | null)[]>;
   item: DropdownItemType;
   index: number;
 }) => {
-  const { selectedIndex, focusedIndex } = useDropdown();
+  const { focusedIndex, selectedIndex, itemsRef } = useDropdown();
   const { selectIndex } = useSetDropdown();
+
   return (
     <li
       className={cx('item')}
@@ -159,32 +110,117 @@ const DropdownItem = ({
       aria-selected={selectedIndex === index}
       aria-current={focusedIndex === index}
       ref={(r) => {
-        if (itemsRef) itemsRef.current[index] = r;
+        if (r && itemsRef.current) itemsRef.current[index] = r;
       }}
     >
-      <button onClick={() => selectIndex(index)}>{item.text}</button>
+      <button onClick={() => selectIndex(index)}>
+        <span>{item.text}</span>
+      </button>
     </li>
   );
 };
 
 const DropdownList = () => {
-  const { items, isOpen, focusedIndex } = useDropdown();
-  const itemsRef = useRef<(HTMLLIElement | null)[]>([]);
-
-  useEffect(() => {
-    itemsRef.current[focusedIndex]?.scrollIntoView({
-      block: 'nearest', // 가장 가까운 곳으로 옮기기
-    });
-  }, [focusedIndex]);
-
+  const { items, isOpen } = useDropdown();
   if (!isOpen) return null;
 
   return (
-    <ul role="listbox" className={cx('DropdownList')}>
+    <ul className={cx('DropdownList')}>
       {items.map((item, i) => (
-        <DropdownItem item={item} key={item.id} index={i} itemsRef={itemsRef} />
+        <DropdownItem item={item} index={i} key={item.id} />
       ))}
     </ul>
+  );
+};
+
+const DropdownContainer = ({ children }: { children: ReactNode }) => {
+  const { handleKeyDown } = useSetDropdown();
+
+  return (
+    <div
+      className={cx('Dropdown')}
+      onKeyDown={handleKeyDown}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {children}
+    </div>
+  );
+};
+
+const DropdownContextProvider = ({
+  list,
+  children,
+}: {
+  list: DropdownItemType[];
+  children: ReactNode;
+}) => {
+  const [items, setItems] = useState(list);
+  const [isOpen, setIsOpen] = useState(false);
+  const [focusedIndex, focusIndex] = useState(-1);
+  const [selectedIndex, selectIndex] = useState(-1);
+  const itemsRef = useRef<HTMLLIElement[]>([]);
+  const size = items.length;
+
+  const toggle = (force?: boolean) =>
+    setIsOpen((prev) => (typeof force === 'boolean' ? force : !prev));
+
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      const { key } = event;
+      const handler = KeyEventMap[key];
+      if (handler)
+        handler(event, {
+          size,
+          focusedIndex,
+          focusIndex,
+          selectIndex,
+          toggle,
+        });
+    },
+    [size, focusedIndex, focusIndex, selectIndex, toggle]
+  );
+
+  useEffect(() => {
+    const targetElem = itemsRef.current?.[focusedIndex];
+    if (targetElem)
+      targetElem.scrollIntoView({
+        block: 'nearest',
+      });
+  }, [focusedIndex]);
+
+  useEffect(() => {
+    const closeDropdown = () => toggle(false);
+    if (isOpen) {
+      window.addEventListener('click', closeDropdown, { once: true });
+    }
+    return () => {
+      window.removeEventListener('click', closeDropdown);
+    };
+  }, [isOpen]);
+
+  return (
+    <DropdownContext.Provider
+      value={{
+        items,
+        size,
+        isOpen,
+        focusedIndex,
+        selectedIndex,
+        itemsRef,
+      }}
+    >
+      <DropdownDispatchContext.Provider
+        value={{
+          setItems,
+          toggle,
+          focusIndex,
+          selectIndex,
+          handleKeyDown,
+        }}
+      >
+        {children}
+      </DropdownDispatchContext.Provider>
+    </DropdownContext.Provider>
   );
 };
 

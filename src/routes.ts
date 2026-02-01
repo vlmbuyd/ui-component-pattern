@@ -1,6 +1,7 @@
 import { Dropdown1 } from './components/dropdown/compound';
 import Dropdown2 from './components/dropdown/headless';
 import Dropdown3 from './components/dropdown/headless-hook';
+import Dropdown4 from './components/dropdown/html-select';
 import ModalContext from './components/modal/context';
 import ModalCreatePortal from './components/modal/createPortal';
 import ModalDialog from './components/modal/dialog';
@@ -30,6 +31,7 @@ export const routePaths = [
   '/dropdown/compound',
   '/dropdown/headless',
   '/dropdown/headless-hook',
+  '/dropdown/html-select',
   '/autoComplete',
   '/dnd',
 ] as const;
@@ -190,6 +192,7 @@ export const routes: Record<ROUTE_PATH, ROUTE> = {
       '/dropdown/compound',
       '/dropdown/headless',
       '/dropdown/headless-hook',
+      '/dropdown/html-select',
     ],
   },
   '/dropdown/compound': {
@@ -209,6 +212,12 @@ export const routes: Record<ROUTE_PATH, ROUTE> = {
     link: '/dropdown/headless-hook',
     name: 'Headless & Hook',
     children: Dropdown3,
+  },
+  '/dropdown/html-select': {
+    key: '/dropdown/html-select',
+    link: '/dropdown/html-select',
+    name: 'HTML select',
+    children: Dropdown4,
   },
   '/autoComplete': {
     key: '/autoComplete',
