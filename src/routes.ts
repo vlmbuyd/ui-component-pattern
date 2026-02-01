@@ -1,5 +1,6 @@
 import { Dropdown1 } from './components/dropdown/compound';
 import Dropdown2 from './components/dropdown/headless';
+import Dropdown3 from './components/dropdown/headless-hook';
 import ModalContext from './components/modal/context';
 import ModalCreatePortal from './components/modal/createPortal';
 import ModalDialog from './components/modal/dialog';
@@ -28,6 +29,7 @@ export const routePaths = [
   '/dropdown',
   '/dropdown/compound',
   '/dropdown/headless',
+  '/dropdown/headless-hook',
   '/autoComplete',
   '/dnd',
 ] as const;
@@ -184,7 +186,11 @@ export const routes: Record<ROUTE_PATH, ROUTE> = {
     key: '/dropdown',
     link: '/dropdown/compound',
     name: '16. 드롭다운(셀렉트 박스)',
-    children: ['/dropdown/compound', '/dropdown/headless'],
+    children: [
+      '/dropdown/compound',
+      '/dropdown/headless',
+      '/dropdown/headless-hook',
+    ],
   },
   '/dropdown/compound': {
     key: '/dropdown/compound',
@@ -197,6 +203,12 @@ export const routes: Record<ROUTE_PATH, ROUTE> = {
     link: '/dropdown/headless',
     name: 'Headless',
     children: Dropdown2,
+  },
+  '/dropdown/headless-hook': {
+    key: '/dropdown/headless-hook',
+    link: '/dropdown/headless-hook',
+    name: 'Headless & Hook',
+    children: Dropdown3,
   },
   '/autoComplete': {
     key: '/autoComplete',
